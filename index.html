@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- SEO核心标签（关键！影响搜索引擎收录） -->
+    <meta charset="UTF-8">
+    <!-- 中医药书籍搜集大全 中医书籍 中医书籍文字版 -->
+    <title>中医书籍收藏</title>
+    <!-- 中医药书籍搜集大全 中医书籍 中医书籍文字版 -->
+    <meta name="description" content="这个网页展示了我个人搜集的一些中医书籍，我将它们转换为文字版，在网页上发布">
+    <!-- 中医 -->
+    <meta name="keywords" content="我的中医书籍展示">
+    <!-- 适配移动端 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 简单样式，让页面更美观 */
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        .content {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            white-space: pre-wrap; /* 保留txt里的换行和空格 */
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>我的中医书籍展示</h1>
+    <!-- 用于展示txt内容的容器 -->
+    <div class="content" id="txtContent"></div>
+
+    <script>
+        // 读取同目录下的content.txt文件并展示
+        async function loadTxtContent() {
+            const contentElement = document.getElementById('txtContent');
+            try {
+                // 发起请求读取txt文件（必须和index.html放在同一目录）
+                const response = await fetch('content.txt');
+                if (!response.ok) {
+                    throw new Error('txt文件未找到或读取失败');
+                }
+                // 将txt内容转为文本并展示
+                const textContent = await response.text();
+                contentElement.textContent = textContent;
+            } catch (error) {
+                // 异常处理：显示错误信息
+                contentElement.classList.add('error');
+                contentElement.textContent = `加载失败：${error.message}`;
+            }
+        }
+
+        // 页面加载完成后执行读取操作
+        window.onload = loadTxtContent;
+    </script>
+</body>
+</html>
