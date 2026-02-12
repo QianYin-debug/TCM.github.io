@@ -1,64 +1,140 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <!-- SEO核心标签（关键！影响搜索引擎收录） -->
+    <!-- SEO核心标签（保证网页能被搜索到） -->
     <meta charset="UTF-8">
-    <!-- 中医药书籍搜集大全 中医书籍 中医书籍文字版 -->
-    <title>中医书籍收藏</title>
-    <!-- 中医药书籍搜集大全 中医书籍 中医书籍文字版 -->
-    <meta name="description" content="这个网页展示了我个人搜集的一些中医书籍，我将它们转换为文字版，在网页上发布">
-    <!-- 中医 -->
-    <meta name="keywords" content="我的中医书籍展示">
-    <!-- 适配移动端 -->
+    <title>中医中药书籍搜集大全</title>
+    <meta name="description" content="中医中药书籍搜集大全文本信息">
+    <meta name="keywords" content="中医, content_01, content_02, content_12">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* 简单样式，让页面更美观 */
+        /* 整体样式优化 */
         body {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             font-family: Arial, sans-serif;
             line-height: 1.6;
         }
+        /* 分页按钮区域 */
+        .pagination {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .page-btn {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .page-btn:hover {
+            background: #eee;
+        }
+        .page-btn.active {
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        /* 内容展示区域（适配大文本，添加滚动条） */
         .content {
             background: #f5f5f5;
             padding: 20px;
             border-radius: 8px;
-            white-space: pre-wrap; /* 保留txt里的换行和空格 */
+            white-space: pre-wrap; /* 保留txt换行/空格 */
+            max-height: 70vh; /* 限制高度，避免页面过长 */
+            overflow-y: auto; /* 垂直滚动条 */
+            font-size: 14px;
+        }
+        /* 加载/错误提示样式 */
+        .loading {
+            color: #007bff;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
         }
         .error {
             color: red;
             font-weight: bold;
+            text-align: center;
+            padding: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>我的中医书籍展示</h1>
-    <!-- 用于展示txt内容的容器 -->
+    <h1>我的12个文本内容展示</h1>
+    
+    <!-- 分页按钮区域 -->
+    <div class="pagination" id="pagination"></div>
+    
+    <!-- 内容展示容器 -->
     <div class="content" id="txtContent"></div>
 
     <script>
-        // 读取同目录下的content.txt文件并展示
-        async function loadTxtContent() {
-            const contentElement = document.getElementById('txtContent');
+        // 1. 定义12个txt文件的名称（和你的文件命名完全对应）
+        const txtFiles = [
+            'content_01.txt', 'content_02.txt', 'content_03.txt',
+            'content_04.txt', 'content_05.txt', 'content_06.txt',
+            'content_07.txt', 'content_08.txt', 'content_09.txt',
+            'content_10.txt', 'content_11.txt', 'content_12.txt'
+        ];
+        // 当前选中的页码（默认第1页）
+        let currentPage = 0;
+        // 获取DOM元素
+        const paginationEl = document.getElementById('pagination');
+        const contentEl = document.getElementById('txtContent');
+
+        // 2. 生成分页按钮（1-12页）
+        function createPagination() {
+            txtFiles.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${index === 0 ? 'active' : ''}`;
+                btn.textContent = `第${index + 1}页`;
+                // 点击按钮切换页码
+                btn.addEventListener('click', () => switchPage(index));
+                paginationEl.appendChild(btn);
+            });
+        }
+
+        // 3. 切换页码并加载对应txt文件（核心函数）
+        async function switchPage(pageIndex) {
+            // 更新当前页码和按钮样式
+            currentPage = pageIndex;
+            document.querySelectorAll('.page-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === pageIndex);
+            });
+
+            // 显示加载状态（适配20MB大文件，避免用户等待无提示）
+            contentEl.className = 'content loading';
+            contentEl.textContent = `正在加载第${pageIndex + 1}页内容...（文件较大，可能需要几秒）`;
+
             try {
-                // 发起请求读取txt文件（必须和index.html放在同一目录）
-                const response = await fetch('content.txt');
+                // 加载对应txt文件
+                const response = await fetch(txtFiles[pageIndex]);
                 if (!response.ok) {
-                    throw new Error('txt文件未找到或读取失败');
+                    throw new Error(`第${pageIndex + 1}页文件未找到或加载失败`);
                 }
-                // 将txt内容转为文本并展示
+                // 读取大文本（处理20MB文件）
                 const textContent = await response.text();
-                contentElement.textContent = textContent;
+                
+                // 加载完成，展示内容
+                contentEl.className = 'content';
+                contentEl.textContent = textContent;
             } catch (error) {
-                // 异常处理：显示错误信息
-                contentElement.classList.add('error');
-                contentElement.textContent = `加载失败：${error.message}`;
+                // 加载失败，显示错误
+                contentEl.className = 'content error';
+                contentEl.textContent = `加载失败：${error.message}`;
             }
         }
 
-        // 页面加载完成后执行读取操作
-        window.onload = loadTxtContent;
+        // 4. 页面初始化：生成分页按钮 + 加载第一页
+        window.onload = () => {
+            createPagination();
+            switchPage(0); // 初始加载第1页（index=0对应content_01.txt）
+        };
     </script>
 </body>
 </html>
