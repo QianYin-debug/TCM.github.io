@@ -83,6 +83,8 @@
         ];
         // 当前选中的页码（默认第1页）
         let currentPage = 0;
+        // 存储当前的读取器（用于切换页码时中断上一次的流式读取）
+        let currentReader = null;
         // 获取DOM元素
         const paginationEl = document.getElementById('pagination');
         const contentEl = document.getElementById('txtContent');
@@ -99,17 +101,23 @@
             });
         }
 
-        // 3. 切换页码并加载对应txt文件（核心函数）
+        // 3. 切换页码并流式加载对应txt文件（核心修改函数）
         async function switchPage(pageIndex) {
+            // 若上一次的流式读取还在进行，先中断它（避免多页内容混在一起）
+            if (currentReader) {
+                currentReader.cancel('用户切换了页码');
+                currentReader = null;
+            }
+
             // 更新当前页码和按钮样式
             currentPage = pageIndex;
             document.querySelectorAll('.page-btn').forEach((btn, idx) => {
                 btn.classList.toggle('active', idx === pageIndex);
             });
 
-            // 显示加载状态（适配20MB大文件，避免用户等待无提示）
+            // 显示加载状态
             contentEl.className = 'content loading';
-            contentEl.textContent = `正在加载第${pageIndex + 1}页内容...（文件较大，可能需要几秒）`;
+            contentEl.textContent = `正在加载第${pageIndex + 1}页内容...（文件较大，内容将逐步显示）`;
 
             try {
                 // 加载对应txt文件
@@ -117,16 +125,39 @@
                 if (!response.ok) {
                     throw new Error(`第${pageIndex + 1}页文件未找到或加载失败`);
                 }
-                // 读取大文本（处理20MB文件）
-                const textContent = await response.text();
+
+                // 核心：获取响应体的流式读取器（替代一次性读取）
+                const reader = response.body.getReader();
+                currentReader = reader;
+                // 文本解码器（处理二进制流为字符串）
+                const decoder = new TextDecoder('utf-8');
                 
-                // 加载完成，展示内容
+                // 清空加载提示，准备展示流式内容
                 contentEl.className = 'content';
-                contentEl.textContent = textContent;
+                contentEl.textContent = '';
+
+                // 循环读取文件块
+                while (true) {
+                    // 读取下一块内容（done为true表示读取完成）
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // 将二进制块解码为字符串，并追加到内容区域
+                    const chunk = decoder.decode(value, { stream: true });
+                    contentEl.textContent += chunk;
+
+                    // 可选：让滚动条自动跟随最新内容（体验优化）
+                    contentEl.scrollTop = contentEl.scrollHeight;
+                }
+
+                // 读取完成，清空读取器标识
+                currentReader = null;
             } catch (error) {
-                // 加载失败，显示错误
-                contentEl.className = 'content error';
-                contentEl.textContent = `加载失败：${error.message}`;
+                // 过滤掉“用户切换页码”的主动中断错误，只提示真正的加载失败
+                if (error.message !== '用户切换了页码') {
+                    contentEl.className = 'content error';
+                    contentEl.textContent = `加载失败：${error.message}`;
+                }
             }
         }
 
